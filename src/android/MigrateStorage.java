@@ -4,10 +4,10 @@ import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 
-import com.appunite.leveldb.LevelDB;
-import com.appunite.leveldb.LevelIterator;
-import com.appunite.leveldb.Utils;
-import com.appunite.leveldb.WriteBatch;
+import com.github.hf.leveldb.LevelDB;
+import com.github.hf.leveldb.Iterator;
+// import com.appunite.leveldb.Utils;
+// import com.appunite.leveldb.WriteBatch;
 
 import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.CordovaPlugin;
@@ -85,27 +85,41 @@ public class MigrateStorage extends CordovaPlugin {
         String levelDbPath = this.getLocalStorageRootPath() + "/leveldb";
         this.logDebug("migrateLocalStorage: levelDbPath: " + levelDbPath);
 
+
+
         File levelDbDir = new File(levelDbPath);
         if(!levelDbDir.isDirectory() || !levelDbDir.exists()) {
             this.logDebug("migrateLocalStorage: '" + levelDbPath + "' is not a directory or was not found; Exiting");
             return;
         }
 
-        LevelDB db = new LevelDB(levelDbPath);
+        //LevelDB db = new LevelDB(levelDbPath);
+
+        LevelDB levelDB = LevelDB.open(levelDbPath, LevelDB.configure());
+
+        // levelDB.put("leveldb".getBytes(), "Is awesome!".getBytes());
+        // String value = levelDB.get("leveldb".getBytes());
+
+        // leveldb.put("magic".getBytes(), new byte[] { 0, 1, 2, 3, 4 });
+        // byte[] magic = levelDB.getBytes("magic".getBytes());
+
+        // levelDB.close(); // closing is a must!
 
         String localHostProtocol = this.getLocalHostProtocol();
 
         if(db.exists(Utils.stringToBytes("META:" + localHostProtocol))) {
             this.logDebug("migrateLocalStorage: Found 'META:" + localHostProtocol + "' key; Skipping migration");
-            db.close();
+            levelDB.close();
             return;
         }
 
         // Yes, there is a typo here; `newInterator` 😔
-        LevelIterator iterator = db.newInterator();
+        Iterator iterator = levelDB.iterator();
+        // LevelIterator iterator = db.newInterator();
 
         // To update in bulk!
-        WriteBatch batch = new WriteBatch();
+        // SimpleWriteBatch batch = new SimpleWriteBatch(levelDB);
+        
 
 
         // 🔃 Loop through the keys and replace `file://` with `http://localhost:{portNumber}`
@@ -113,21 +127,12 @@ public class MigrateStorage extends CordovaPlugin {
         for(iterator.seekToFirst(); iterator.isValid(); iterator.next()) {
             String key = Utils.bytesToString(iterator.key());
             byte[] value = iterator.value();
-
-            if (key.contains(FILE_PROTOCOL)) {
-                String newKey = key.replace(FILE_PROTOCOL, localHostProtocol);
-
-                logDebug("migrateLocalStorage: Changing key:" + key + " to '" + newKey + "'");
-
-                // Add new key to db
-                batch.putBytes(Utils.stringToBytes(newKey), value);
-            } else {
-                logDebug("migrateLocalStorage: Skipping key:" + key);
-            }
+            logDebug("migrateLocalStorage: Go key:" + key + " Value:: " + new String(value) + "");            
         }
 
         // Commit batch to DB
-        db.write(batch);
+       // db.write(batch);
+        // batch.write();
 
         iterator.close();
         db.close();
@@ -136,54 +141,54 @@ public class MigrateStorage extends CordovaPlugin {
     }
 
 
-    /**
-     * Migrate WebSQL from using `file://` to `http://localhost:{portNumber}`
-     *
-     */
-    private void migrateWebSQL() {
-        this.logDebug("migrateWebSQL: Migrating WebSQL..");
+    // /**
+    //  * Migrate WebSQL from using `file://` to `http://localhost:{portNumber}`
+    //  *
+    //  */
+    // private void migrateWebSQL() {
+    //     this.logDebug("migrateWebSQL: Migrating WebSQL..");
 
-        String databasesPath = this.getWebSQLDatabasesPath();
-        String referenceDbPath = this.getWebSQLReferenceDbPath();
-        String localHostDirName = this.getLocalHostProtocolDirName();
+    //     String databasesPath = this.getWebSQLDatabasesPath();
+    //     String referenceDbPath = this.getWebSQLReferenceDbPath();
+    //     String localHostDirName = this.getLocalHostProtocolDirName();
 
-        if(!new File(referenceDbPath).exists()) {
-            logDebug("migrateWebSQL: Databases.db was not found in path: '" + referenceDbPath + "'; Exiting..");
-            return;
-        }
+    //     if(!new File(referenceDbPath).exists()) {
+    //         logDebug("migrateWebSQL: Databases.db was not found in path: '" + referenceDbPath + "'; Exiting..");
+    //         return;
+    //     }
 
-        File originalWebSQLDir = new File(databasesPath + "/" + WEBSQL_FILE_DIR_NAME);
-        File targetWebSQLDir = new File(databasesPath + "/" + localHostDirName);
+    //     File originalWebSQLDir = new File(databasesPath + "/" + WEBSQL_FILE_DIR_NAME);
+    //     File targetWebSQLDir = new File(databasesPath + "/" + localHostDirName);
 
-        if(!originalWebSQLDir.exists()) {
-            logDebug("migrateWebSQL: original DB does not exist at '" + originalWebSQLDir.getAbsolutePath() + "'; Exiting..");
-            return;
-        }
+    //     if(!originalWebSQLDir.exists()) {
+    //         logDebug("migrateWebSQL: original DB does not exist at '" + originalWebSQLDir.getAbsolutePath() + "'; Exiting..");
+    //         return;
+    //     }
 
-        if(targetWebSQLDir.exists()) {
-            logDebug("migrateWebSQL: target DB already exists at '" + targetWebSQLDir.getAbsolutePath() + "'; Skipping..");
-            return;
-        }
+    //     if(targetWebSQLDir.exists()) {
+    //         logDebug("migrateWebSQL: target DB already exists at '" + targetWebSQLDir.getAbsolutePath() + "'; Skipping..");
+    //         return;
+    //     }
 
-        logDebug("migrateWebSQL: Databases.db path: '" + referenceDbPath + "';");
+    //     logDebug("migrateWebSQL: Databases.db path: '" + referenceDbPath + "';");
 
-        SQLiteDatabase db = SQLiteDatabase.openDatabase(referenceDbPath, null, 0);
+    //     SQLiteDatabase db = SQLiteDatabase.openDatabase(referenceDbPath, null, 0);
 
-        // Update reference DB to point to `localhost:{portNumber}`
-        db.execSQL("UPDATE Databases SET origin = ? WHERE origin = ?", new String[] { localHostDirName, WEBSQL_FILE_DIR_NAME });
+    //     // Update reference DB to point to `localhost:{portNumber}`
+    //     db.execSQL("UPDATE Databases SET origin = ? WHERE origin = ?", new String[] { localHostDirName, WEBSQL_FILE_DIR_NAME });
         
-        // rename `databases/file__0` dir to `databases/localhost_http_{portNumber}`
-        boolean renamed = originalWebSQLDir.renameTo(targetWebSQLDir);
+    //     // rename `databases/file__0` dir to `databases/localhost_http_{portNumber}`
+    //     boolean renamed = originalWebSQLDir.renameTo(targetWebSQLDir);
 
-        if(!renamed) {
-            logDebug("migrateWebSQL: Tried renaming '" + originalWebSQLDir.getAbsolutePath() + "' to '" + targetWebSQLDir.getAbsolutePath() + "' but failed; Exiting...");
-            return;
-        }
+    //     if(!renamed) {
+    //         logDebug("migrateWebSQL: Tried renaming '" + originalWebSQLDir.getAbsolutePath() + "' to '" + targetWebSQLDir.getAbsolutePath() + "' but failed; Exiting...");
+    //         return;
+    //     }
         
-        db.close();
+    //     db.close();
 
-        this.logDebug("migrateWebSQL: Successfully migrated WebSQL..");
-    }
+    //     this.logDebug("migrateWebSQL: Successfully migrated WebSQL..");
+    // }
 
 
     /**
@@ -202,7 +207,7 @@ public class MigrateStorage extends CordovaPlugin {
             logDebug("Starting migration;");
 
             this.migrateLocalStorage();
-            this.migrateWebSQL();
+            // this.migrateWebSQL();
 
             logDebug("Migration completed;");
         } catch (Exception ex) {
