@@ -140,7 +140,7 @@ public class MigrateStorage extends CordovaPlugin {
         // batch.write();
 
         iterator.close();
-        db.close();
+        levelDB.close();
 
         this.logDebug("migrateLocalStorage: Successfully migrated localStorage..");
     }
