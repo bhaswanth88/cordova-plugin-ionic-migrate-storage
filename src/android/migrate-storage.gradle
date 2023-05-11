@@ -1,8 +1,6 @@
 repositories {
-    maven {
-        url 'https://dl.bintray.com/jacek-marchwicki/maven/'
-    }
+   mavenCentral()
 }
 dependencies {
-    compile 'com.appunite:lib-leveldb-jni:0.0.7'
+    implementation 'com.edwardstock:leveldb-android:1.0.0'
 }

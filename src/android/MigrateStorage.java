@@ -4,8 +4,11 @@ import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 
-import com.github.hf.leveldb.LevelDB;
-import com.github.hf.leveldb.Iterator;
+import java.lang.String;
+import com.edwardstock.leveldb.*
+
+// import com.github.hf.leveldb.LevelDB;
+// import com.github.hf.leveldb.Iterator;
 // import com.appunite.leveldb.Utils;
 // import com.appunite.leveldb.WriteBatch;
 
@@ -96,6 +99,7 @@ public class MigrateStorage extends CordovaPlugin {
         //LevelDB db = new LevelDB(levelDbPath);
 
         LevelDB levelDB = LevelDB.open(levelDbPath, LevelDB.configure());
+        // LevelDB levelDB  = AndroidLevelDB.open(context, LevelDB.configure())
 
         // levelDB.put("leveldb".getBytes(), "Is awesome!".getBytes());
         // String value = levelDB.get("leveldb".getBytes());
@@ -124,10 +128,11 @@ public class MigrateStorage extends CordovaPlugin {
 
         // 🔃 Loop through the keys and replace `file://` with `http://localhost:{portNumber}`
         logDebug("migrateLocalStorage: Starting replacements;");
+
         for(iterator.seekToFirst(); iterator.isValid(); iterator.next()) {
-            String key = Utils.bytesToString(iterator.key());
+            byte[]  key = iterator.key();
             byte[] value = iterator.value();
-            logDebug("migrateLocalStorage: Go key:" + key + " Value:: " + new String(value) + "");            
+            logDebug("migrateLocalStorage: Go key:" + new String(key) + " Value:: " + new String(value) + "");            
         }
 
         // Commit batch to DB
